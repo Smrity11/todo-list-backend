@@ -89,7 +89,7 @@ async function run() {
         res.send(result);
       });
 
-      app.delete('/allTodo/:id', verifyToken, async (req, res) => {
+      app.delete('/allTodo/:id', async (req, res) => {
         const id = req.params.id;
         const query = { _id: new ObjectId(id) }
         const result = await allTodoList.deleteOne(query);
@@ -97,27 +97,28 @@ async function run() {
       })
 
      // Update a ToDo item
-app.put('/updateTodo/:id', verifyToken, async (req, res) => {
-  const todoId = req.params.id;
-  const updatedText = req.body.toDo;
-
-  try {
-    // Update the ToDo item in the MongoDB collection
-    const query = { _id: new ObjectId(todoId) };
-    const update = { $set: { text: updatedText } };
-    const result = await allTodoList.updateOne(query, update);
-
-    // Check if the update was successful
-    if (result.modifiedCount === 1) {
-      res.json({ message: 'ToDo updated successfully' });
-    } else {
-      res.status(404).json({ error: 'ToDo not found' });
-    }
-  } catch (error) {
-    console.error('Error updating ToDo:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
-});
+     app.put('/updateTodo/:id', async (req, res) => {
+      const todoId = req.params.id;
+      const updatedText = req.body.task; // Use 'task' as the key
+    
+      try {
+        // Update the ToDo item in the MongoDB collection
+        const query = { _id: new ObjectId(todoId) };
+        const update = { $set: { task: updatedText } };
+        const result = await allTodoList.updateOne(query, update);
+    
+        // Check if the update was successful
+        if (result.modifiedCount === 1) {
+          res.json({ message: 'ToDo updated successfully' });
+        } else {
+          res.status(404).json({ error: 'ToDo not found' });
+        }
+      } catch (error) {
+        console.error('Error updating ToDo:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+      }
+    });
+    
 
 
 
