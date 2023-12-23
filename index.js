@@ -4,19 +4,14 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
-
-
 const port = process.env.PORT || 5000;
 
 // middleware
-app.use(cors({
-    origin: 'http://localhost:5174', // Replace with your frontend URL
-    credentials: true,
-  }));
+app.use(cors());
 app.use(express.json());
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.ikoswdf.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -31,9 +26,10 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const userCollection = client.db("todoDb").collection("users");
+    const allTodoList = client.db("todoDb").collection("allTodo");
 
 
         // jwt related api
@@ -62,7 +58,7 @@ async function run() {
 
 
               // users related api
-     app.get('/users',verifyToken , async (req, res) => {
+     app.get('/users' , async (req, res) => {
         const result = await userCollection.find().toArray();
         res.send(result);
       });
@@ -82,12 +78,56 @@ async function run() {
       });
 
 
+      app.post('/allTodo', async (req, res) => {
+        const item = req.body;
+        const result = await allTodoList.insertOne(item);
+        res.send(result);
+      });
+
+      app.get('/allTodo', async (req, res) => {
+        const result = await allTodoList.find().toArray();
+        res.send(result);
+      });
+
+      app.delete('/allTodo/:id', verifyToken, async (req, res) => {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) }
+        const result = await allTodoList.deleteOne(query);
+        res.send(result);
+      })
+
+     // Update a ToDo item
+app.put('/updateTodo/:id', verifyToken, async (req, res) => {
+  const todoId = req.params.id;
+  const updatedText = req.body.toDo;
+
+  try {
+    // Update the ToDo item in the MongoDB collection
+    const query = { _id: new ObjectId(todoId) };
+    const update = { $set: { text: updatedText } };
+    const result = await allTodoList.updateOne(query, update);
+
+    // Check if the update was successful
+    if (result.modifiedCount === 1) {
+      res.json({ message: 'ToDo updated successfully' });
+    } else {
+      res.status(404).json({ error: 'ToDo not found' });
+    }
+  } catch (error) {
+    console.error('Error updating ToDo:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
+
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
-    await client.close();
+    // await client.close();
   }
 }
 run().catch(console.dir);
